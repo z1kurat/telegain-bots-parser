@@ -1,0 +1,45 @@
+version: '3'
+services:
+ db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: z1kurat
+      POSTGRES_PASSWORD: example
+      DB_HOST: db
+      DB_PORT: 5432
+      POSTGRES_DB: bots
+    ports:
+      - "5432:5432"
+
+ alembic:
+    build:
+        context: .
+        dockerfile: alembic/Dockerfile
+    depends_on:
+      - db
+    command: alembic upgrade heads
+
+ selenium:
+    image: selenium/standalone-chrome:latest
+    hostname: chrome
+    privileged: true
+    shm_size: 2g
+    ports:
+      - "4444:4444"
+    environment:
+      - SE_VNC_NO_PASSWORD=1
+      - SE_NODE_MAX_SESSIONS=3
+
+ parser:
+    build:
+          context: .
+          dockerfile: parser/Dockerfile
+    depends_on:
+      - db
+      - alembic
+      - selenium
+    ports:
+      - "8000:8000"
+    environment:
+      - SELENIUM_HOST=chrome
+      - SELENIUM_PORT=4444
